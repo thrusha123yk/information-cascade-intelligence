@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+const BASE_URL = 'https://information-cascade-intelligence-api.onrender.com/api';
 
 export async function fetchOverview() {
   const res = await fetch(`${BASE_URL}/overview`);
