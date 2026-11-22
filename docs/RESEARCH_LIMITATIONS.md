@@ -1,0 +1,2 @@
+# Research limitations
+TF-IDF grouping is a baseline, not semantic understanding. Public RSS/API records do not usually expose person-to-person share edges, so observed record volume is not a true cascade graph. Distinct publishers may repeat the same upstream report, so source diversity is not independent corroboration. This version does not classify claims as true/false, estimate validated real-world impact, or forecast growth. Those modules require defined datasets, evidence provenance, labelled evaluation data and transparent validation.
