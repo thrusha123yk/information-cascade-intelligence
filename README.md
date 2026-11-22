@@ -42,8 +42,8 @@ An academic research platform for discovering emerging information, analyzing ho
   * Background asynchronous multi-source collection jobs
 * **Database**:
 
-  * Dual Engine: Supabase PostgreSQL \& SQLite (`cascade\_intelligence.db`)
-  * All 11 research tables: `articles`, `sources`, `topics`, `topic\_articles`, `extracted\_entities`, `narrative\_relationships`, `evidence\_records`, `cascade\_metrics`, `impact\_assessments`, `predictions`, `collection\_logs`
+  * Dual Engine: PostgreSQL via psycopg 3 \& local SQLite (`cascade\_intelligence.db`)
+  * All 12 research tables: `articles`, `sources`, `topics`, `topic\_articles`, `topic\_history`, `extracted\_entities`, `narrative\_relationships`, `evidence\_records`, `cascade\_metrics`, `impact\_assessments`, `predictions`, `collection\_logs`
 * **AI \& NLP Pipeline**:
 
   * TF-IDF Vectorization (`scikit-learn`)
@@ -134,15 +134,13 @@ $env:PYTHONPATH="."
 ## 6\. Environment Variables (`backend/.env`)
 
 ```ini
-# Database Configuration
-# Optional: Provide Supabase credentials for PostgreSQL cloud storage.
-# If left blank, the system automatically runs locally on SQLite (cascade\_intelligence.db).
+# Optional Supabase API credentials for integrations using the Supabase client.
 SUPABASE\_URL=https://your-project-id.supabase.co
 
 SUPABASE\_KEY=your\_supabase\_publishable\_key
 
 SUPABASE\_TABLE=articles
-# Local Database Fallback
+# Use SQLite locally or set a PostgreSQL connection URI for deployment.
 DATABASE\_URL=sqlite:///./cascade\_intelligence.db
 
 # GDELT Configuration
@@ -165,9 +163,34 @@ CORS\_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 \---
 
-## 7\. Database Architecture
+## 7\. Deploying with Supabase PostgreSQL
 
-The system uses 11 relational tables defined in `database/schema.sql` (PostgreSQL) and mirrored in SQLite:
+1. In Supabase, open **Project Settings → Database** and copy the PostgreSQL connection URI. Use the direct connection URI or a session-pooler URI, include `sslmode=require`, and URL-encode special characters in the database password.
+2. Set `DATABASE_URL` in `backend/.env`, for example:
+
+   ```ini
+   DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require
+   ```
+
+3. From the repository root, install the backend dependencies and start the API:
+
+   ```powershell
+   cd backend
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
+
+   If the virtual environment does not exist yet, create it first with `py -m venv .venv`.
+4. Confirm startup at `http://127.0.0.1:8000/api/health`, then check the API at `http://127.0.0.1:8000/docs`.
+
+At startup the backend creates missing PostgreSQL tables and indexes. It does not import, reset, or overwrite database rows. Do not run `backend/migrate_sqlite_to_postgres.py` when the Supabase tables already contain migrated data. SQLite remains the default with a `sqlite:///` URL.
+
+\---
+
+## 8\. Database Architecture
+
+The system uses 12 relational tables defined in `backend/postgres_schema.sql` (PostgreSQL) and mirrored in SQLite:
 
 1. `articles`: Primary records preserving URL, title, description, source, publication time, and collection origin.
 2. `sources`: Aggregated newsrooms and data providers with coverage statistics and reliability tiers.
@@ -180,4 +203,5 @@ The system uses 11 relational tables defined in `database/schema.sql` (PostgreSQ
 9. `impact\_assessments`: Qualitative evaluations across 6 societal sectors with severity ratings.
 10. `predictions`: 24h, 48h, 72h article coverage volume forecasts with confidence bounds.
 11. `collection\_logs`: Historical audit trail of collection runs, items saved, and API errors.
+12. `topic\_history`: Daily cascade-score snapshots for topic evolution.
 

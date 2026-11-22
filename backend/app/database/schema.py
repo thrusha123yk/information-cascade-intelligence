@@ -63,7 +63,17 @@ SQLITE_TABLES = [
         UNIQUE(topic_id, article_id)
     );
     """,
-    # 5. extracted_entities
+    # 5. Historical daily cascade snapshots
+    """
+    CREATE TABLE IF NOT EXISTS topic_history (
+        id TEXT PRIMARY KEY,
+        topic_id TEXT NOT NULL,
+        cascade_score REAL NOT NULL,
+        snapshot_date TEXT NOT NULL,
+        UNIQUE(topic_id, snapshot_date)
+    );
+    """,
+    # 6. extracted_entities
     """
     CREATE TABLE IF NOT EXISTS extracted_entities (
         id TEXT PRIMARY KEY,
@@ -75,7 +85,7 @@ SQLITE_TABLES = [
         created_at TEXT
     );
     """,
-    # 6. narrative_relationships
+    # 7. narrative_relationships
     """
     CREATE TABLE IF NOT EXISTS narrative_relationships (
         id TEXT PRIMARY KEY,
@@ -89,7 +99,7 @@ SQLITE_TABLES = [
         created_at TEXT
     );
     """,
-    # 7. evidence_records
+    # 8. evidence_records
     """
     CREATE TABLE IF NOT EXISTS evidence_records (
         id TEXT PRIMARY KEY,
@@ -103,7 +113,7 @@ SQLITE_TABLES = [
         evaluated_at TEXT
     );
     """,
-    # 8. cascade_metrics
+    # 9. cascade_metrics
     """
     CREATE TABLE IF NOT EXISTS cascade_metrics (
         id TEXT PRIMARY KEY,
@@ -117,7 +127,7 @@ SQLITE_TABLES = [
         computed_at TEXT
     );
     """,
-    # 9. impact_assessments
+    # 10. impact_assessments
     """
     CREATE TABLE IF NOT EXISTS impact_assessments (
         id TEXT PRIMARY KEY,
@@ -132,7 +142,7 @@ SQLITE_TABLES = [
         assessed_at TEXT
     );
     """,
-    # 10. predictions
+    # 11. predictions
     """
     CREATE TABLE IF NOT EXISTS predictions (
         id TEXT PRIMARY KEY,
@@ -148,7 +158,7 @@ SQLITE_TABLES = [
         predicted_at TEXT
     );
     """,
-    # 11. collection_logs
+    # 12. collection_logs
     """
     CREATE TABLE IF NOT EXISTS collection_logs (
         id TEXT PRIMARY KEY,
@@ -190,6 +200,7 @@ def init_sqlite_db(db_path: str):
         con.execute("CREATE INDEX IF NOT EXISTS idx_art_source ON articles(source);")
         con.execute("CREATE INDEX IF NOT EXISTS idx_top_cascade ON topics(cascade_score DESC);")
         con.execute("CREATE INDEX IF NOT EXISTS idx_top_articles_topic ON topic_articles(topic_id);")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_hist_topic ON topic_history(topic_id);")
         con.execute("CREATE INDEX IF NOT EXISTS idx_ent_article ON extracted_entities(article_id);")
         con.execute("CREATE INDEX IF NOT EXISTS idx_narr_topic ON narrative_relationships(topic_id);")
         con.execute("CREATE INDEX IF NOT EXISTS idx_logs_completed ON collection_logs(completed_at DESC);")

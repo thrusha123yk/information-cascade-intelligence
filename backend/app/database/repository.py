@@ -1,10 +1,9 @@
-import sqlite3
 import hashlib
 import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from .connection import get_sqlite_connection, supabase_client
+from .connection import get_sqlite_connection
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ def get_articles(limit: int = 500, offset: int = 0, source: Optional[str] = None
             query += " AND source = ?"
             params.append(source)
         if search:
-            query += " AND (title LIKE ? OR description LIKE ?)"
+            query += " AND (LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))"
             term = f"%{search}%"
             params.extend([term, term])
         query += " ORDER BY published_at DESC, collected_at DESC LIMIT ? OFFSET ?"
@@ -269,8 +268,15 @@ def save_entities(entities: List[Dict[str, Any]]):
             eid = ent.get("id") or generate_hash(f"{ent['article_id']}|{ent['entity_text']}|{ent['entity_type']}")[:20]
             con.execute(
                 """
-                INSERT OR REPLACE INTO extracted_entities (id, article_id, entity_text, entity_type, salience, context, created_at)
+                INSERT INTO extracted_entities (id, article_id, entity_text, entity_type, salience, context, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    article_id=excluded.article_id,
+                    entity_text=excluded.entity_text,
+                    entity_type=excluded.entity_type,
+                    salience=excluded.salience,
+                    context=excluded.context,
+                    created_at=excluded.created_at
                 """,
                 (
                     eid,
@@ -298,8 +304,17 @@ def save_narrative_relationships(rels: List[Dict[str, Any]]):
             rid = r.get("id") or generate_hash(f"{r['topic_id']}|{r['source_article_id']}|{r['target_article_id']}|{r['relationship_type']}")[:20]
             con.execute(
                 """
-                INSERT OR REPLACE INTO narrative_relationships (id, topic_id, source_article_id, target_article_id, relationship_type, label, confidence, textual_evidence, created_at)
+                INSERT INTO narrative_relationships (id, topic_id, source_article_id, target_article_id, relationship_type, label, confidence, textual_evidence, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    topic_id=excluded.topic_id,
+                    source_article_id=excluded.source_article_id,
+                    target_article_id=excluded.target_article_id,
+                    relationship_type=excluded.relationship_type,
+                    label=excluded.label,
+                    confidence=excluded.confidence,
+                    textual_evidence=excluded.textual_evidence,
+                    created_at=excluded.created_at
                 """,
                 (
                     rid,
@@ -328,8 +343,17 @@ def save_evidence_record(record: Dict[str, Any]):
     with get_sqlite_connection() as con:
         con.execute(
             """
-            INSERT OR REPLACE INTO evidence_records (id, topic_id, corroboration_level, independent_sources_count, consensus_claim, conflicting_points, evidence_gaps, unresolved_questions, evaluated_at)
+            INSERT INTO evidence_records (id, topic_id, corroboration_level, independent_sources_count, consensus_claim, conflicting_points, evidence_gaps, unresolved_questions, evaluated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                topic_id=excluded.topic_id,
+                corroboration_level=excluded.corroboration_level,
+                independent_sources_count=excluded.independent_sources_count,
+                consensus_claim=excluded.consensus_claim,
+                conflicting_points=excluded.conflicting_points,
+                evidence_gaps=excluded.evidence_gaps,
+                unresolved_questions=excluded.unresolved_questions,
+                evaluated_at=excluded.evaluated_at
             """,
             (
                 rid,
@@ -394,8 +418,18 @@ def save_impact_assessment(assessment: Dict[str, Any]):
     with get_sqlite_connection() as con:
         con.execute(
             """
-            INSERT OR REPLACE INTO impact_assessments (id, topic_id, primary_category, potential_severity, urgency_level, affected_population, affected_area, rationale, supporting_sources, assessed_at)
+            INSERT INTO impact_assessments (id, topic_id, primary_category, potential_severity, urgency_level, affected_population, affected_area, rationale, supporting_sources, assessed_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                topic_id=excluded.topic_id,
+                primary_category=excluded.primary_category,
+                potential_severity=excluded.potential_severity,
+                urgency_level=excluded.urgency_level,
+                affected_population=excluded.affected_population,
+                affected_area=excluded.affected_area,
+                rationale=excluded.rationale,
+                supporting_sources=excluded.supporting_sources,
+                assessed_at=excluded.assessed_at
             """,
             (
                 iid,
@@ -431,8 +465,19 @@ def save_predictions(preds: List[Dict[str, Any]]):
             pid = p.get("id") or generate_hash(f"pred|{p['topic_id']}|{p['horizon_hours']}|{now}")[:20]
             con.execute(
                 """
-                INSERT OR REPLACE INTO predictions (id, topic_id, horizon_hours, expected_volume, lower_bound, upper_bound, trajectory, confidence_score, model_name, limitations_note, predicted_at)
+                INSERT INTO predictions (id, topic_id, horizon_hours, expected_volume, lower_bound, upper_bound, trajectory, confidence_score, model_name, limitations_note, predicted_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    topic_id=excluded.topic_id,
+                    horizon_hours=excluded.horizon_hours,
+                    expected_volume=excluded.expected_volume,
+                    lower_bound=excluded.lower_bound,
+                    upper_bound=excluded.upper_bound,
+                    trajectory=excluded.trajectory,
+                    confidence_score=excluded.confidence_score,
+                    model_name=excluded.model_name,
+                    limitations_note=excluded.limitations_note,
+                    predicted_at=excluded.predicted_at
                 """,
                 (
                     pid,
