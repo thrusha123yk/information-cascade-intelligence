@@ -21,9 +21,10 @@ echo API Documentation available at: http://127.0.0.1:8000/docs
 echo Health Check: http://127.0.0.1:8000/api/health
 echo.
 
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Backend server exited with code %ERRORLEVEL%.
     pause
 )
+
